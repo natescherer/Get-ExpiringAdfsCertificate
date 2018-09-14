@@ -28,7 +28,7 @@
 .EXAMPLE
     .\Get-ExpiringAdfsCertificate.ps1 -EmailFrom adfs@treyresearch.net -EmailTo noc@treyresearch.net -SmtpServer mail.treyresearch.net -SmtpAuthenticated -NoOutput
     (Does not generate an output, but emails details about expiring certificates to noc@treyresearch.net)
-    
+
 .LINK
     https://github.com/natescherer/Get-ExpiringAdfsCertifate
 
@@ -50,7 +50,7 @@ param (
     [switch]$IgnoreDisabledTrusts,
 
     [parameter(ParameterSetName="Email",Mandatory=$true)]
-    # From email address for alert email.
+    # From address for alert email.
     [string]$EmailFrom,
 
     [parameter(ParameterSetName="Email",Mandatory=$true)]
@@ -80,7 +80,7 @@ param (
 
     [parameter(ParameterSetName="Email",Mandatory=$false)]
     # Custom footer for alert email.
-    [string]$BodyFooter = ("In general, expiring Relying Party Trust certificates will need to be renewed" +
+    [string]$BodyFooter = ("In general, expiring Relying Party Trust certificates will need to be renewed " +
                         "by the company/application on the other end of the trust. Expiring AD FS " +
                         "Certificates will need to be renewed by the AD FS administrator."),
 
