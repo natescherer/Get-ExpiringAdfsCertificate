@@ -26,6 +26,7 @@
     ADFS                CN=ADFS Signing - adfs.treyresearch.net     11/12/2018 2:15:13 PM
 
 .EXAMPLE
+<<<<<<< HEAD
     .\Get-ExpiringAdfsCertificate.ps1 -EmailFrom adfs@treyresearch.net -EmailTo noc@treyresearch.net `
     -SmtpServer mail.treyresearch.net -SmtpAuthenticated -NoOutput
     
@@ -33,6 +34,13 @@
 
 .LINK
     https://github.com/natescherer/Get-ExpiringAdfsCertificate
+=======
+    .\Get-ExpiringAdfsCertificate.ps1 -EmailFrom adfs@treyresearch.net -EmailTo noc@treyresearch.net -SmtpServer mail.treyresearch.net -SmtpAuthenticated -NoOutput
+    (Does not generate an output, but emails details about expiring certificates to noc@treyresearch.net)
+
+.LINK
+    https://github.com/natescherer/Get-ExpiringAdfsCertifate
+>>>>>>> 7a3733dc7996da80f2921aa0c8c9a4c117e9aeb0
 
 .NOTES
     As the AD FS cmdlets don't support remoting, this must be run directly on an AD FS server. The account that
@@ -68,7 +76,11 @@ param (
     [int]$SmtpPort = 25,
 
     [parameter(ParameterSetName="Email",Mandatory=$false)]
+<<<<<<< HEAD
     # Send email using authentication. Note that you must have previously saved credentials using -SaveSmtpCreds.
+=======
+    # Send email using authentication. Note that you must have previously saved credentials using -SaveSmtpAuth.
+>>>>>>> 7a3733dc7996da80f2921aa0c8c9a4c117e9aeb0
     [switch]$SmtpAuthenticated,
 
     [parameter(ParameterSetName="Email",Mandatory=$false)]
@@ -82,15 +94,22 @@ param (
 
     [parameter(ParameterSetName="Email",Mandatory=$false)]
     # Custom footer for alert email.
+<<<<<<< HEAD
     [string]$BodyFooter = ("Expiring RP Trust certificates will need to be renewed " +
                         "by the company/application on the other end of the Relying Party Trust.<br />Expiring " +
                         "AD FS certificates will need to be renewed by the AD FS administrator."),
+=======
+    [string]$BodyFooter = ("In general, expiring Relying Party Trust certificates will need to be renewed " +
+                        "by the company/application on the other end of the trust. Expiring AD FS " +
+                        "Certificates will need to be renewed by the AD FS administrator."),
+>>>>>>> 7a3733dc7996da80f2921aa0c8c9a4c117e9aeb0
 
     [parameter(ParameterSetName="Email",Mandatory=$false)]
     # Does not output an object; just sends alert email.
     [switch]$NoOutput,
 
     [parameter(ParameterSetName="SavePassword",Mandatory=$true)]
+<<<<<<< HEAD
     # Saves SMTP user name, encrypted password, and keyfile to decrypt password to 
     # Get-ExpiringAdfsCertificate_smtppass.txt, Get-ExpiringAdfsCertificate_smtpkey.txt, 
     # and Get-ExpiringAdfsCertificate_smtpkey.txt, respectively. These files must exist in the same directory 
@@ -189,6 +208,20 @@ process {
         Out-File -InputObject $SSKey -FilePath "Get-ExpiringAdfsCertificate_smtpkey.txt"
         Out-File -InputObject $SSCred.UserName -FilePath "Get-ExpiringAdfsCertificate_smtpuser.txt"
         Out-File -InputObject $SSPassUsingKey -FilePath "Get-ExpiringAdfsCertificate_smtppass.txt"
+=======
+    # Generates a Secure String and keyfile for storing the password used to send email.
+    [switch]$SaveSmtpAuth
+)
+process {
+    if ($SaveSmtpAuth) {
+        $SSKey = Get-Random -Count 32 -InputObject (0..255)
+        Out-File -InputObject $SSKey -FilePath "getexpadfscert-key.txt"
+
+        $SSCred = Get-Credential -Message "Enter the username and password for SMTP"
+        Out-File -InputObject $SSCred.UserName -FilePath "getexpadfscert-user.txt"
+        $SSPassUsingKey = ConvertFrom-SecureString -SecureString $SSCred.Password -Key (Get-Content -Path "getexpadfscert-key.txt")
+        Out-File -InputObject $SSPassUsingKey -FilePath "getexpadfscert-pass.txt"
+>>>>>>> 7a3733dc7996da80f2921aa0c8c9a4c117e9aeb0
     } else {
         $ComparisonDate = $(Get-Date).AddDays($ExpirationThreshold)
         $ExpiringCertArray = @()
@@ -216,12 +249,17 @@ process {
         $Certs = Get-AdfsCertificate
         foreach ($Cert in $Certs) {
             if ($Cert.Certificate.NotAfter -lt $ComparisonDate) {
+<<<<<<< HEAD
                 $ExpiringCertArray += [PSCustomObject]@{'CertType' = 'AD FS';
+=======
+                $ExpiringCertArray += [PSCustomObject]@{'CertType' = 'ADFS';
+>>>>>>> 7a3733dc7996da80f2921aa0c8c9a4c117e9aeb0
                                         'Name' = $Cert.Certificate.Subject;
                                         'ExpiryDate' = $Cert.Certificate.NotAfter}
             }
         }
 
+<<<<<<< HEAD
         if ($ExpiringCertArray -and ($PSCmdlet.ParameterSetName -eq "Email")) {
             $BodyData = @()
             foreach ($ExpiringCert in $ExpiringCertArray) {
@@ -231,6 +269,33 @@ process {
 
             $Body = Format-HtmlEmailBody -Header $BodyHeader -Data $BodyData -Footer $BodyFooter
 
+=======
+        if ($ExpiringCertArray -and ($PSCmdlet.ParameterSetName -like "Email*")) {
+            $BodyData = ""
+            foreach ($ExpiringCert in $ExpiringCertArray) {
+                $BodyData += ('<strong>' + $ExpiringCert.Name + '</strong>: Certificate for ' +
+                                $ExpiringCert.CertType + ' expires ' + $ExpiringCert.ExpiryDate + '<br>')
+            }
+            $Body = ('<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">' +
+                    '<html xmlns="http://www.w3.org/1999/xhtml">' +
+                    '<head> <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /> <title></title> <style></style> </head>' +
+                    '<body> <table border="0" cellpadding="0" cellspacing="0" height="100%" width="100%" id="bodyTable"> <tr> <td valign="top">' +
+                    '<table border="0" cellpadding="0" cellspacing="0" width="800" id="emailContainer">' +
+                    '<tr> <td align="center" valign="top"> <table border="0" cellpadding="10" cellspacing="0" width="100%" id="emailHeader"> <tr>' +
+                    '<td valign="top" style="font-family: sans-serif; font-size: 12px"> ' +
+                    $BodyHeader +
+                    '</td> </tr> </table> </td> </tr>' +
+                    '<tr> <td align="center" valign="top"> <table border="0" cellpadding="10" cellspacing="0" width="100%" id="emailBody"> <tr> ' +
+                    '<td valign="top" style="font-family: monospace; font-size: 12px"> ' +
+                    $BodyData +
+                    '</td> </tr> </table> </td> </tr>' +
+                    '<tr> <td align="center" valign="top">' +
+                    '<table border="0" cellpadding="10" cellspacing="0" width="100%" id="emailFooter"> <tr> ' +
+                    '<td valign="top" style="font-family: sans-serif; font-size: 12px">' +
+                    $BodyFooter +
+                    '</td> </tr> </table> </td> </tr>' +
+                    '</table> </td> </tr> </table> </body> </html>')
+>>>>>>> 7a3733dc7996da80f2921aa0c8c9a4c117e9aeb0
             $SmtpParams = @{
                 From = $EmailFrom
                 To = $EmailTo
@@ -242,6 +307,7 @@ process {
                 UseSsl = $true
             }
             if ($SmtpAuthenticated) {
+<<<<<<< HEAD
                 if (!(Test-Path "Get-ExpiringAdfsCertificate_smtpuser.txt") -and
                 !(Test-Path "Get-ExpiringAdfsCertificate_smtppass.txt") -and
                 !(Test-Path "Get-ExpiringAdfsCertificate_smtpkey.txt")) {
@@ -252,11 +318,20 @@ process {
                 $SmtpUser = Get-Content "Get-ExpiringAdfsCertificate_smtpuser.txt"
                 $SmtpKey = Get-Content "Get-ExpiringAdfsCertificate_smtpkey.txt"
                 $SmtpSS = Get-Content "Get-ExpiringAdfsCertificate_smtppass.txt"
+=======
+                $SmtpUser = Get-Content "getexpadfscert-user.txt"
+                $SmtpKey = Get-Content "getexpadfscert-key.txt"
+                $SmtpSS = Get-Content "getexpadfscert-pass.txt"
+>>>>>>> 7a3733dc7996da80f2921aa0c8c9a4c117e9aeb0
                 $SmtpSS = ConvertTo-SecureString -String $SmtpSS -Key $SmtpKey
                 $SMTPCreds = New-Object System.Management.Automation.PSCredential($SmtpUser, $SmtpSS)
                 $SmtpParams += @{Credential = $SMTPCreds}
             }
+<<<<<<< HEAD
             [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { return $true }
+=======
+
+>>>>>>> 7a3733dc7996da80f2921aa0c8c9a4c117e9aeb0
             Send-MailMessage @SMTPParams
         }
         if ($NoOutput -eq $false) {
