@@ -1,96 +1,95 @@
 ﻿<#
 .SYNOPSIS
-    This script checks Active Directory Federation Services (AD FS) certificates and AD FS Relying Party Trust
-    certificates to see if they expire within a user-specified number of days.
+This script checks Active Directory Federation Services (AD FS) certificates and AD FS Relying Party Trust 
+certificates to see if they expire within a user-specified number of days.
 
 .DESCRIPTION
-    This script will query AD FS certificates (via Get-AdfsCertficate) and Relying Party Trust
-    certificates (via Get-AdfsRelyingPartyTrust) and check if the certificates expire within a user-defined
-    threshold (or the default 30 days if not specified). It will then output details about expiring
-    certificates, and, optionally, send an alert email.
+This script will query AD FS certificates (via Get-AdfsCertficate) and Relying Party Trust 
+certificates (via Get-AdfsRelyingPartyTrust) and check if the certificates expire within a user-defined 
+threshold (or the default 30 days if not specified). It will then output details about expiring certificates, and,  
+optionally, send an alert email.
 
 .INPUTS
-    None
+None
 
 .OUTPUTS
-    Outputs contains an array of objects containing CertType, Name, and ExpiryDate for each expiring certificate.
-    Can be overridden by using -NoOutput.
+Outputs an array of objects containing CertType, Name, and ExpiryDate for each expiring certificate. 
+Can be overridden by using -NoOutput.
 
 .EXAMPLE
-    .\Get-ExpiringAdfsCertificate.ps1
-    CertType            Name                                        ExpiryDate
-    --------            ----                                        ----------
-    RP Trust Encryption app.fabrikam.com                            2/14/2018 8:31:43 AM
-    RP Trust Signing    app.fabrikam.com                            2/14/2018 8:31:43 AM
-    ADFS                CN=ADFS Encryption - adfs.treyresearch.net  11/12/2018 2:15:12 PM
-    ADFS                CN=ADFS Signing - adfs.treyresearch.net     11/12/2018 2:15:13 PM
+.\Get-ExpiringAdfsCertificate.ps1
+CertType            Name                                        ExpiryDate
+--------            ----                                        ----------
+RP Trust Encryption app.fabrikam.com                            2/14/2018 8:31:43 AM
+RP Trust Signing    app.fabrikam.com                            2/14/2018 8:31:43 AM
+ADFS                CN=ADFS Encryption - adfs.treyresearch.net  11/12/2018 2:15:12 PM
+ADFS                CN=ADFS Signing - adfs.treyresearch.net     11/12/2018 2:15:13 PM
 
 .EXAMPLE
-    .\Get-ExpiringAdfsCertificate.ps1 -EmailFrom adfs@treyresearch.net -EmailTo noc@treyresearch.net `
-    -SmtpServer mail.treyresearch.net -SmtpAuthenticated -NoOutput
-    
-    (Does not generate an output, but emails details about expiring certificates to noc@treyresearch.net)
+.\Get-ExpiringAdfsCertificate.ps1 -EmailFrom adfs@treyresearch.net -EmailTo noc@treyresearch.net -SmtpServer mail.treyresearch.net -SmtpAuthenticated -NoOutput
+(Does not generate an output, but emails details about expiring certificates to noc@treyresearch.net)
 
 .LINK
-    https://github.com/natescherer/Get-ExpiringAdfsCertificate
+https://github.com/natescherer/Get-ExpiringAdfsCertificate
 
 .NOTES
-    As the AD FS cmdlets don't support remoting, this must be run directly on an AD FS server. The account that
-    runs this script will require Administrator rights on the AD FS server.
+As the AD FS cmdlets don't support remoting, this must be run directly on an AD FS server. 
+The account that runs this script will require Administrator rights on the AD FS server. 
+This script was written on PowerShell 5.1 for ADFS 2016, but should theoretically work with older versions. 
 #>
 
-[CmdletBinding(DefaultParameterSetName="NoEmail")]
+[CmdletBinding(DefaultParameterSetName="Default")]
 param (
-    [parameter(ParameterSetName="NoEmail",Mandatory=$false)]
-    [parameter(ParameterSetName="Email",Mandatory=$false)]
+    [parameter(ParameterSetName="Default",Mandatory=$false)]
+    [parameter(ParameterSetName="SendEmail",Mandatory=$false)]
     # The number of days from now to to compare against certificate expiry dates. If not specified, defaults to 30.
     [int]$ExpirationThreshold = 30,
 
-    [parameter(ParameterSetName="NoEmail",Mandatory=$false)]
-    [parameter(ParameterSetName="Email",Mandatory=$false)]
+    [parameter(ParameterSetName="Default",Mandatory=$false)]
+    [parameter(ParameterSetName="SendEmail",Mandatory=$false)]
     # Ignore any Relying Party Trusts that are disabled.
     [switch]$IgnoreDisabledTrusts,
 
-    [parameter(ParameterSetName="Email",Mandatory=$true)]
+    [parameter(ParameterSetName="SendEmail",Mandatory=$true)]
     # From address for alert email.
     [string]$EmailFrom,
 
-    [parameter(ParameterSetName="Email",Mandatory=$true)]
+    [parameter(ParameterSetName="SendEmail",Mandatory=$true)]
     # To address for alert email.
     [string]$EmailTo,
 
-    [parameter(ParameterSetName="Email",Mandatory=$true)]
+    [parameter(ParameterSetName="SendEmail",Mandatory=$true)]
     # SMTP Server for sending alert email.
     [string]$SmtpServer,
 
-    [parameter(ParameterSetName="Email",Mandatory=$false)]
+    [parameter(ParameterSetName="SendEmail",Mandatory=$false)]
     # TCP Port to connect to SMTP server on, if it is different than 25.
     [int]$SmtpPort = 25,
 
-    [parameter(ParameterSetName="Email",Mandatory=$false)]
+    [parameter(ParameterSetName="SendEmail",Mandatory=$false)]
     # Send email using authentication. Note that you must have previously saved credentials using -SaveSmtpCreds.
     [switch]$SmtpAuthenticated,
 
-    [parameter(ParameterSetName="Email",Mandatory=$false)]
+    [parameter(ParameterSetName="SendEmail",Mandatory=$false)]
     # Custom subject for alert email.
     [string]$Subject = "AD FS Certificates on $env:computername Expire within $ExpirationThreshold Days",
 
-    [parameter(ParameterSetName="Email",Mandatory=$false)]
+    [parameter(ParameterSetName="SendEmail",Mandatory=$false)]
     # Custom header for alert email.
     [string]$BodyHeader = ("The following AD FS certificates on $env:computername expire within " +
                             "$ExpirationThreshold days:"),
 
-    [parameter(ParameterSetName="Email",Mandatory=$false)]
+    [parameter(ParameterSetName="SendEmail",Mandatory=$false)]
     # Custom footer for alert email.
     [string]$BodyFooter = ("Expiring RP Trust certificates will need to be renewed " +
                         "by the company/application on the other end of the Relying Party Trust.<br />Expiring " +
                         "AD FS certificates will need to be renewed by the AD FS administrator."),
 
-    [parameter(ParameterSetName="Email",Mandatory=$false)]
+    [parameter(ParameterSetName="SendEmail",Mandatory=$false)]
     # Does not output an object; just sends alert email.
     [switch]$NoOutput,
 
-    [parameter(ParameterSetName="SavePassword",Mandatory=$true)]
+    [parameter(ParameterSetName="SaveSmtpCreds",Mandatory=$true)]
     # Saves SMTP user name, encrypted password, and keyfile to decrypt password to 
     # Get-ExpiringAdfsCertificate_smtppass.txt, Get-ExpiringAdfsCertificate_smtpkey.txt, 
     # and Get-ExpiringAdfsCertificate_smtpkey.txt, respectively. These files must exist in the same directory 
@@ -99,7 +98,7 @@ param (
 )
 begin {
     function Format-HtmlEmailBody {
-        [CmdletBinding(DefaultParameterSetName="NoEmail")]
+        [CmdletBinding(DefaultParameterSetName="Default")]
         param (
             [parameter(Mandatory=$true)]
             [string]$Header,
@@ -222,7 +221,7 @@ process {
             }
         }
 
-        if ($ExpiringCertArray -and ($PSCmdlet.ParameterSetName -eq "Email")) {
+        if ($ExpiringCertArray -and ($PSCmdlet.ParameterSetName -eq "SendEmail")) {
             $BodyData = @()
             foreach ($ExpiringCert in $ExpiringCertArray) {
                 $BodyData += ("<strong>" + $ExpiringCert.Name + "</strong>: Cert for '" +
