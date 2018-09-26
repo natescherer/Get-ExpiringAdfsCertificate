@@ -97,7 +97,7 @@ param (
     [switch]$SaveSmtpCreds
 )
 begin {
-    function Format-HtmlEmailBody {
+    function New-HtmlEmailBody {
         [CmdletBinding(DefaultParameterSetName="Default")]
         param (
             [parameter(Mandatory=$true)]
@@ -228,7 +228,7 @@ process {
                                 $ExpiringCert.CertType + "' expires " + $ExpiringCert.ExpiryDate)
             }
 
-            $Body = Format-HtmlEmailBody -Header $BodyHeader -Data $BodyData -Footer $BodyFooter
+            $Body = New-HtmlEmailBody -Header $BodyHeader -Data $BodyData -Footer $BodyFooter
 
             $SmtpParams = @{
                 From = $EmailFrom
