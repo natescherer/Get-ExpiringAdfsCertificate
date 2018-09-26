@@ -6,7 +6,7 @@ I'm happy to consider any contributions, especially ones that add functionality 
 # Ground Rules
 I really only have one rule for contributions:
 
-> This project is licensed under [The Unlicense](https://unlicense.org/), so you should be comfortable with your contribution being licensed under that as well.
+> This project is licensed under The MIT License, so your contribution will need to use the same license in order to be accepted.
 
 If I accept your contribution, I'll add you to the Authors section in the README.
 
