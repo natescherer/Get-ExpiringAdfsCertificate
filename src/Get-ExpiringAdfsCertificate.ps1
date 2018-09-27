@@ -42,6 +42,11 @@ This script was written on PowerShell 5.1 for ADFS 2016, but should theoreticall
 param (
     [parameter(ParameterSetName="Default",Mandatory=$false)]
     [parameter(ParameterSetName="SendEmail",Mandatory=$false)]
+    # The AD FS server to query, if is remote.
+    [string]$AdfsServer,
+
+    [parameter(ParameterSetName="Default",Mandatory=$false)]
+    [parameter(ParameterSetName="SendEmail",Mandatory=$false)]
     # The number of days from now to to compare against certificate expiry dates. If not specified, defaults to 30.
     [int]$ExpirationThreshold = 30,
 
@@ -112,10 +117,14 @@ process {
         $ComparisonDate = $(Get-Date).AddDays($ExpirationThreshold)
         $ExpiringCertArray = @()
 
-        if ($IgnoreDisabledTrusts) {
-            $Trusts = Get-AdfsRelyingPartyTrust | where-object {$_.enabled -eq $true}
+        if ($AdfsServer) {
+            $Trusts = Invoke-Command -ComputerName $AdfsServer -ScriptBlock {Get-AdfsRelyingPartyTrust}
         } else {
             $Trusts = Get-AdfsRelyingPartyTrust
+        }
+
+        if ($IgnoreDisabledTrusts) {
+            $Trusts = $Trusts | Where-Object {$_.enabled -eq $true}
         }
 
         foreach ($Trust in $Trusts) {
@@ -132,7 +141,11 @@ process {
             }
         }
 
-        $Certs = Get-AdfsCertificate
+        if ($AdfsServer) {
+            $Certs = Invoke-Command -ComputerName $AdfsServer -ScriptBlock {Get-AdfsCertificate}
+        } else {
+            $Certs = Get-AdfsCertificate
+        }         
         foreach ($Cert in $Certs) {
             if ($Cert.Certificate.NotAfter -lt $ComparisonDate) {
                 $ExpiringCertArray += [PSCustomObject]@{'CertType' = 'AD FS';
