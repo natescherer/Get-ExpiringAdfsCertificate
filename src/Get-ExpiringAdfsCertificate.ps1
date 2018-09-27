@@ -77,7 +77,7 @@ param (
 
     [parameter(ParameterSetName="SendEmail",Mandatory=$false)]
     # Custom subject for alert email.
-    [string]$Subject = "AD FS Certificates on $env:computername Expire within $ExpirationThreshold Days",
+    [string]$Subject = "AD FS Certificates on $AdfsServer Expire within $ExpirationThreshold Days",
 
     [parameter(ParameterSetName="SendEmail",Mandatory=$false)]
     # Custom header for alert email.
