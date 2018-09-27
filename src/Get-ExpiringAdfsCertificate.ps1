@@ -43,7 +43,7 @@ param (
     [parameter(ParameterSetName="Default",Mandatory=$false)]
     [parameter(ParameterSetName="SendEmail",Mandatory=$false)]
     # The AD FS server to query, if is remote.
-    [string]$AdfsServer,
+    [string]$AdfsServer = $env:computername,
 
     [parameter(ParameterSetName="Default",Mandatory=$false)]
     [parameter(ParameterSetName="SendEmail",Mandatory=$false)]
@@ -81,7 +81,7 @@ param (
 
     [parameter(ParameterSetName="SendEmail",Mandatory=$false)]
     # Custom header for alert email.
-    [string]$BodyHeader = ("The following AD FS certificates on $env:computername expire within " +
+    [string]$BodyHeader = ("The following AD FS certificates on $AdfsServer expire within " +
                             "$ExpirationThreshold days:"),
 
     [parameter(ParameterSetName="SendEmail",Mandatory=$false)]
@@ -120,12 +120,7 @@ process {
     $ComparisonDate = $(Get-Date).AddDays($ExpirationThreshold)
     $ExpiringCertArray = @()
 
-    if ($AdfsServer) {
-        $Trusts = Invoke-Command -ComputerName $AdfsServer -ScriptBlock {Get-AdfsRelyingPartyTrust}
-    } else {
-        $Trusts = Get-AdfsRelyingPartyTrust
-    }
-
+    $Trusts = Invoke-Command -ComputerName $AdfsServer -ScriptBlock {Get-AdfsRelyingPartyTrust}
     if ($IgnoreDisabledTrusts) {
         $Trusts = $Trusts | Where-Object {$_.enabled -eq $true}
     }
@@ -144,11 +139,7 @@ process {
         }
     }
 
-    if ($AdfsServer) {
-        $Certs = Invoke-Command -ComputerName $AdfsServer -ScriptBlock {Get-AdfsCertificate}
-    } else {
-        $Certs = Get-AdfsCertificate
-    }         
+    $Certs = Invoke-Command -ComputerName $AdfsServer -ScriptBlock {Get-AdfsCertificate}       
     foreach ($Cert in $Certs) {
         if ($Cert.Certificate.NotAfter -lt $ComparisonDate) {
             $ExpiringCertArray += [PSCustomObject]@{'CertType' = 'AD FS';
