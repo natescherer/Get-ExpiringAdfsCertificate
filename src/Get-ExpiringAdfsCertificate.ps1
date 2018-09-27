@@ -103,8 +103,7 @@ param (
 )
 begin {
     . .\New-HtmlEmailBody.ps1
-}
-process {
+
     if ($SaveSmtpCreds) {
         $SSCred = Get-Credential -Message "Enter the username and password for SMTP"
         $SSKey = Get-Random -Count 32 -InputObject (0..255)
@@ -113,86 +112,89 @@ process {
         Out-File -InputObject $SSKey -FilePath "Get-ExpiringAdfsCertificate_smtpkey.txt"
         Out-File -InputObject $SSCred.UserName -FilePath "Get-ExpiringAdfsCertificate_smtpuser.txt"
         Out-File -InputObject $SSPassUsingKey -FilePath "Get-ExpiringAdfsCertificate_smtppass.txt"
+
+        exit
+    }
+}
+process {
+    $ComparisonDate = $(Get-Date).AddDays($ExpirationThreshold)
+    $ExpiringCertArray = @()
+
+    if ($AdfsServer) {
+        $Trusts = Invoke-Command -ComputerName $AdfsServer -ScriptBlock {Get-AdfsRelyingPartyTrust}
     } else {
-        $ComparisonDate = $(Get-Date).AddDays($ExpirationThreshold)
-        $ExpiringCertArray = @()
+        $Trusts = Get-AdfsRelyingPartyTrust
+    }
 
-        if ($AdfsServer) {
-            $Trusts = Invoke-Command -ComputerName $AdfsServer -ScriptBlock {Get-AdfsRelyingPartyTrust}
-        } else {
-            $Trusts = Get-AdfsRelyingPartyTrust
+    if ($IgnoreDisabledTrusts) {
+        $Trusts = $Trusts | Where-Object {$_.enabled -eq $true}
+    }
+
+    foreach ($Trust in $Trusts) {
+        if ($Trust.EncryptionCertificate -and ($Trust.EncryptionCertificate.NotAfter -lt $ComparisonDate)) {
+            $ExpiringCertArray += [PSCustomObject]@{'CertType' = 'RP Trust Encryption';
+                                    'Name' = $Trust.Name;
+                                    'ExpiryDate' = $Trust.EncryptionCertificate.NotAfter}
+
+        }
+        if ($Trust.RequestSigningCertificate -and ($Trust.RequestSigningCertificate.NotAfter -lt $ComparisonDate)) {
+            $ExpiringCertArray += [PSCustomObject]@{'CertType' = 'RP Trust Signing';
+                                    'Name' = $Trust.Name;
+                                    'ExpiryDate' = $Trust.RequestSigningCertificate.NotAfter}
+        }
+    }
+
+    if ($AdfsServer) {
+        $Certs = Invoke-Command -ComputerName $AdfsServer -ScriptBlock {Get-AdfsCertificate}
+    } else {
+        $Certs = Get-AdfsCertificate
+    }         
+    foreach ($Cert in $Certs) {
+        if ($Cert.Certificate.NotAfter -lt $ComparisonDate) {
+            $ExpiringCertArray += [PSCustomObject]@{'CertType' = 'AD FS';
+                                    'Name' = $Cert.Certificate.Subject;
+                                    'ExpiryDate' = $Cert.Certificate.NotAfter}
+        }
+    }
+
+    if ($ExpiringCertArray -and ($PSCmdlet.ParameterSetName -eq "SendEmail")) {
+        $BodyData = @()
+        foreach ($ExpiringCert in $ExpiringCertArray) {
+            $BodyData += ("<strong>" + $ExpiringCert.Name + "</strong>: Cert for '" +
+                            $ExpiringCert.CertType + "' expires " + $ExpiringCert.ExpiryDate)
         }
 
-        if ($IgnoreDisabledTrusts) {
-            $Trusts = $Trusts | Where-Object {$_.enabled -eq $true}
+        $Body = New-HtmlEmailBody -Header $BodyHeader -Data $BodyData -Footer $BodyFooter
+
+        $SmtpParams = @{
+            From = $EmailFrom
+            To = $EmailTo
+            Subject = $Subject
+            Body = $Body
+            BodyAsHtml = $true
+            SmtpServer = $SmtpServer
+            Port = $SmtpPort
+            UseSsl = $true
         }
-
-        foreach ($Trust in $Trusts) {
-            if ($Trust.EncryptionCertificate -and ($Trust.EncryptionCertificate.NotAfter -lt $ComparisonDate)) {
-                $ExpiringCertArray += [PSCustomObject]@{'CertType' = 'RP Trust Encryption';
-                                        'Name' = $Trust.Name;
-                                        'ExpiryDate' = $Trust.EncryptionCertificate.NotAfter}
+        if ($SmtpAuthenticated) {
+            if (!(Test-Path "Get-ExpiringAdfsCertificate_smtpuser.txt") -and
+            !(Test-Path "Get-ExpiringAdfsCertificate_smtppass.txt") -and
+            !(Test-Path "Get-ExpiringAdfsCertificate_smtpkey.txt")) {
+                throw ("Saved SMTP credentials are missing. Please run script with -SaveSmtpCreds " +
+                        "to save SMTP credentials, then run again.")
 
             }
-            if ($Trust.RequestSigningCertificate -and ($Trust.RequestSigningCertificate.NotAfter -lt $ComparisonDate)) {
-                $ExpiringCertArray += [PSCustomObject]@{'CertType' = 'RP Trust Signing';
-                                        'Name' = $Trust.Name;
-                                        'ExpiryDate' = $Trust.RequestSigningCertificate.NotAfter}
-            }
+            $SmtpUser = Get-Content "Get-ExpiringAdfsCertificate_smtpuser.txt"
+            $SmtpKey = Get-Content "Get-ExpiringAdfsCertificate_smtpkey.txt"
+            $SmtpSS = Get-Content "Get-ExpiringAdfsCertificate_smtppass.txt"
+            $SmtpSS = ConvertTo-SecureString -String $SmtpSS -Key $SmtpKey
+            $SMTPCreds = New-Object System.Management.Automation.PSCredential($SmtpUser, $SmtpSS)
+            $SmtpParams += @{Credential = $SMTPCreds}
         }
-
-        if ($AdfsServer) {
-            $Certs = Invoke-Command -ComputerName $AdfsServer -ScriptBlock {Get-AdfsCertificate}
-        } else {
-            $Certs = Get-AdfsCertificate
-        }         
-        foreach ($Cert in $Certs) {
-            if ($Cert.Certificate.NotAfter -lt $ComparisonDate) {
-                $ExpiringCertArray += [PSCustomObject]@{'CertType' = 'AD FS';
-                                        'Name' = $Cert.Certificate.Subject;
-                                        'ExpiryDate' = $Cert.Certificate.NotAfter}
-            }
-        }
-
-        if ($ExpiringCertArray -and ($PSCmdlet.ParameterSetName -eq "SendEmail")) {
-            $BodyData = @()
-            foreach ($ExpiringCert in $ExpiringCertArray) {
-                $BodyData += ("<strong>" + $ExpiringCert.Name + "</strong>: Cert for '" +
-                                $ExpiringCert.CertType + "' expires " + $ExpiringCert.ExpiryDate)
-            }
-
-            $Body = New-HtmlEmailBody -Header $BodyHeader -Data $BodyData -Footer $BodyFooter
-
-            $SmtpParams = @{
-                From = $EmailFrom
-                To = $EmailTo
-                Subject = $Subject
-                Body = $Body
-                BodyAsHtml = $true
-                SmtpServer = $SmtpServer
-                Port = $SmtpPort
-                UseSsl = $true
-            }
-            if ($SmtpAuthenticated) {
-                if (!(Test-Path "Get-ExpiringAdfsCertificate_smtpuser.txt") -and
-                !(Test-Path "Get-ExpiringAdfsCertificate_smtppass.txt") -and
-                !(Test-Path "Get-ExpiringAdfsCertificate_smtpkey.txt")) {
-                    throw ("Saved SMTP credentials are missing. Please run script with -SaveSmtpCreds " +
-                            "to save SMTP credentials, then run again.")
-
-                }
-                $SmtpUser = Get-Content "Get-ExpiringAdfsCertificate_smtpuser.txt"
-                $SmtpKey = Get-Content "Get-ExpiringAdfsCertificate_smtpkey.txt"
-                $SmtpSS = Get-Content "Get-ExpiringAdfsCertificate_smtppass.txt"
-                $SmtpSS = ConvertTo-SecureString -String $SmtpSS -Key $SmtpKey
-                $SMTPCreds = New-Object System.Management.Automation.PSCredential($SmtpUser, $SmtpSS)
-                $SmtpParams += @{Credential = $SMTPCreds}
-            }
-            [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { return $true }
-            Send-MailMessage @SMTPParams
-        }
-        if ($NoOutput -eq $false) {
-            $ExpiringCertArray
-        }
+        [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { return $true }
+        Send-MailMessage @SMTPParams
+    }
+    if ($NoOutput -eq $false) {
+        $ExpiringCertArray
     }
 }
