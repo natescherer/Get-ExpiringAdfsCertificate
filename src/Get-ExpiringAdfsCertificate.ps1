@@ -41,56 +41,56 @@ This script was written on PowerShell 5.1 for ADFS 2016, but should theoreticall
 [CmdletBinding(DefaultParameterSetName="Default")]
 param (
     [parameter(ParameterSetName="Default",Mandatory=$false)]
-    [parameter(ParameterSetName="SendEmail",Mandatory=$false)]
+    [parameter(ParameterSetName="Email",Mandatory=$false)]
     # The AD FS server to query, if is remote.
     [string]$AdfsServer = $env:computername,
 
     [parameter(ParameterSetName="Default",Mandatory=$false)]
-    [parameter(ParameterSetName="SendEmail",Mandatory=$false)]
+    [parameter(ParameterSetName="Email",Mandatory=$false)]
     # The number of days from now to to compare against certificate expiry dates. If not specified, defaults to 30.
     [int]$ExpirationThreshold = 30,
 
     [parameter(ParameterSetName="Default",Mandatory=$false)]
-    [parameter(ParameterSetName="SendEmail",Mandatory=$false)]
+    [parameter(ParameterSetName="Email",Mandatory=$false)]
     # Ignore any Relying Party Trusts that are disabled.
     [switch]$IgnoreDisabledTrusts,
 
-    [parameter(ParameterSetName="SendEmail",Mandatory=$true)]
+    [parameter(ParameterSetName="Email",Mandatory=$true)]
     # From address for alert email.
     [string]$EmailFrom,
 
-    [parameter(ParameterSetName="SendEmail",Mandatory=$true)]
+    [parameter(ParameterSetName="Email",Mandatory=$true)]
     # To address for alert email.
     [string]$EmailTo,
 
-    [parameter(ParameterSetName="SendEmail",Mandatory=$true)]
+    [parameter(ParameterSetName="Email",Mandatory=$true)]
     # SMTP Server for sending alert email.
     [string]$SmtpServer,
 
-    [parameter(ParameterSetName="SendEmail",Mandatory=$false)]
+    [parameter(ParameterSetName="Email",Mandatory=$false)]
     # TCP Port to connect to SMTP server on, if it is different than 25.
     [int]$SmtpPort = 25,
 
-    [parameter(ParameterSetName="SendEmail",Mandatory=$false)]
+    [parameter(ParameterSetName="Email",Mandatory=$false)]
     # Send email using authentication. Note that you must have previously saved credentials using -SaveSmtpCreds.
     [switch]$SmtpAuthenticated,
 
-    [parameter(ParameterSetName="SendEmail",Mandatory=$false)]
+    [parameter(ParameterSetName="Email",Mandatory=$false)]
     # Custom subject for alert email.
     [string]$Subject = "AD FS Certificates on $AdfsServer Expire within $ExpirationThreshold Days",
 
-    [parameter(ParameterSetName="SendEmail",Mandatory=$false)]
+    [parameter(ParameterSetName="Email",Mandatory=$false)]
     # Custom header for alert email.
     [string]$BodyHeader = ("The following AD FS certificates on $AdfsServer expire within " +
                             "$ExpirationThreshold days:"),
 
-    [parameter(ParameterSetName="SendEmail",Mandatory=$false)]
+    [parameter(ParameterSetName="Email",Mandatory=$false)]
     # Custom footer for alert email.
     [string]$BodyFooter = ("Expiring RP Trust certificates will need to be renewed " +
                         "by the company/application on the other end of the Relying Party Trust.<br />Expiring " +
                         "AD FS certificates will need to be renewed by the AD FS administrator."),
 
-    [parameter(ParameterSetName="SendEmail",Mandatory=$false)]
+    [parameter(ParameterSetName="Email",Mandatory=$false)]
     # Does not output an object; just sends alert email.
     [switch]$NoOutput,
 
