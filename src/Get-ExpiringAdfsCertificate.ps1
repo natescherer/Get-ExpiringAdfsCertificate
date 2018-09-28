@@ -102,7 +102,7 @@ param (
     [switch]$SaveSmtpCreds
 )
 begin {
-    . .\New-HtmlEmailBody.ps1
+    . .\New-HtmlEmailBody.ps1 # Invoke-Build EmbedDotSource
 
     if ($SaveSmtpCreds) {
         $SSCred = Get-Credential -Message "Enter the username and password for SMTP"
