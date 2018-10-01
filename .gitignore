@@ -1,3 +1,6 @@
-**.txt
-TODO
+# Compiled/packaged files
 build/*
+# HTML files are converted from Markdown at build time
+**.html
+# SMTP Credential storage files
+**_SmtpCreds.xml
