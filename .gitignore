@@ -1,6 +1,8 @@
 # Compiled/packaged files
-build/*
-# HTML files are converted from Markdown at build time
-**.html
+out/*
+# Help files that are generated from other files
+doc/*.html
+doc/js/*
+doc/styles/*
 # SMTP Credential storage files
 **_SmtpCreds.xml
