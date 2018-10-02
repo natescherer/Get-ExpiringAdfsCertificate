@@ -76,12 +76,20 @@ task ZipForRelease {
     Compress-Archive -Path "out\$NameWithoutExt\*" -DestinationPath "out\$NameWithoutExt-$ReleaseVersion.zip"
 }
 
-# Synopsis: Perform all build (but not publish) tasks.
-task . Clean, GenerateMarkdownHelp, UpdateHelpLinkInReadme, MarkDownHelpToHtml, EmbedDotSource, ZipForRelease, GitVerifyCommitted
+# Synopsis: Perform all build tasks.
+task . Clean, GenerateMarkdownHelp, UpdateHelpLinkInReadme, MarkDownHelpToHtml, EmbedDotSource, ZipForRelease, 
+    GitVerifyCommitted, GitVerifyPushed
 
 task GitVerifyCommitted {
-    $test = git diff
-    if ($test) {
+    $gitoutput= git diff
+    if ($gitoutput) {
         throw "There are changes uncommitted to Git."
+    }
+}
+
+task GitVerifyPushed {
+    $gitoutput = git log origin/master..HEAD --oneline
+    if ($gitoutput) {
+        throw "There are commits that have not been pushed to remote yet."
     }
 }
