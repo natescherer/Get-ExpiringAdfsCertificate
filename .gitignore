@@ -1,8 +1,4 @@
 # Compiled/packaged files
 out/*
-# Help files that are generated from other files
-doc/*.html
-doc/js/*
-doc/styles/*
 # SMTP Credential storage files
 **_SmtpCreds.xml
