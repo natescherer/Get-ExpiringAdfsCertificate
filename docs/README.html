@@ -1,0 +1,77 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+<title>README</title>
+    <link rel="stylesheet" type="text/css" href="styles/github-markdown.css" />
+    <link rel="stylesheet" type="text/css" href="styles/github-hjs.css" />
+    <style>
+        .markdown-body {
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 45px;
+        }
+    
+        @media (max-width: 767px) {
+            .markdown-body {
+                padding: 15px;
+            }
+        }
+    </style>
+    <script src="js/highlight.pack.js"></script>
+    <script>
+        hljs.configure({ languages: [] });
+        hljs.initHighlightingOnLoad();
+    </script>
+</head>
+<body>
+    <article class="markdown-body">
+<h1>Get-ExpiringAdfsCertificate</h1>
+<p>This script will query AD FS certificates (via Get-AdfsCertficate) and Relying Party Trust certificates (via Get-AdfsRelyingPartyTrust) and check if the certificates expire within a user-defined threshold (or the default 30 days if not specified). It will then output details about expiring certificates, and,  optionally, send an alert email.</p>
+<h2>Getting Started</h2>
+<p>This script was written with PowerShell 5.1 on AD FS 2016, but should be compatible back to AD FS 2 and PowerShell 2. (Please see Contributing/Bug Reporting below if you run into issues on older versions.)</p>
+<h3>Prerequisites</h3>
+<p>The only real prerequisite is having AD FS installed. If you plan on running the script remotely, you should ensure the computer running the script is able to PSRemote to the AD FS server.</p>
+<h3>Installing</h3>
+<ol>
+<li>Download the latest release from <a href="../../releases">releases</a>.</li>
+<li>Store the script either on the AD FS server, or something that is able to connect to the AD FS server via PowerShell Remoting.</li>
+<li>Schedule the script to run either with Task Scheduler or your preferred scheduling solution. (Running at least once a week is recommended.)</li>
+</ol>
+<p>Alternately, the script can be used by a monitoring solution capable of understanding PowerShell output objects. When run normally (wihout using the -NoOutput parameter), there will be no output unless there are expiring certificates, so the existence of output indicates a failure condition.</p>
+<h2>Usage</h2>
+<h3>Examples</h3>
+<pre><code class="language-PowerShell">.\Get-ExpiringAdfsCertificate.ps1 -AdfsServer &quot;adfs01&quot;
+CertType            Name                                        ExpiryDate
+--------            ----                                        ----------
+RP Trust Encryption app.fabrikam.com                            2/14/2018 8:31:43 AM
+RP Trust Signing    app.fabrikam.com                            2/14/2018 8:31:43 AM
+ADFS                CN=ADFS Encryption - adfs.treyresearch.net  11/12/2018 2:15:12 PM
+ADFS                CN=ADFS Signing - adfs.treyresearch.net     11/12/2018 2:15:13 PM
+</code></pre>
+<pre><code class="language-PowerShell">.\Get-ExpiringAdfsCertificate.ps1 -AdfsServer &quot;adfs01&quot; -EmailFrom adfs@treyresearch.net -EmailTo noc@treyresearch.net -SmtpServer mail.treyresearch.net -SmtpAuthenticated -NoOutput
+(Does not generate an output, but emails details about expiring certificates to noc@treyresearch.net)
+</code></pre>
+<h3>Documentation</h3>
+<p>For detailed documentation, <a href="../v1.1.0/doc/Get-ExpiringAdfsCertificate.ps1.html">click here on GitHub</a><!--,  see Help.html in a release,--> or run Get-Help Get-ExpiringAdfsCertificate.ps1 in PowerShell.</p>
+<h2>Questions/Comments</h2>
+<p>If you have questions, comments, etc, please enter a GitHub Issue with the &quot;question&quot; tag.</p>
+<h2>Contributing/Bug Reporting</h2>
+<p>Contributions and bug reports are gladly accepted! Please see <a href="CONTRIBUTING.html">CONTRIBUTING.md</a> for details.</p>
+<h2>Building</h2>
+<h2>Authors</h2>
+<p><strong>Nate Scherer</strong> - <em>Initial work</em> - <a href="https://github.com/natescherer">natescherer</a></p>
+<h2>License</h2>
+<p>This project is licensed under The MIT License - see <a href="LICENSE">LICENSE</a> for details.</p>
+<h2>Acknowledgements</h2>
+<p><a href="https://gist.github.com/PurpleBooth/109311bb0361f32d87a2">PurpleBooth</a> - README.md template</p>
+<p><a href="https://github.com/nayafia/contributing-template">nayafia/contributing-template</a> - CONTRIBUTING.md template</p>
+<p><a href="https://github.com/olivierlacan/keep-a-changelog">olivierlacan/keep-a-changelog</a> - CHANGELOG.md template</p>
+<p><a href="https://github.com/WetHat/MarkdownToHtml">WetHat/MarkdownToHtml</a> - Conversion of Markdown help to HTML</p>
+<p><a href="https://github.com/sindresorhus/github-markdown-css">sindresorhus/github-markdown-css</a> - CSS for HTML Help</p>
+
+    </article>
+</body>
+</html>
