@@ -77,6 +77,11 @@ task ZipForRelease {
 }
 
 # Synopsis: Perform all build (but not publish) tasks.
-task . Clean, GenerateMarkdownHelp, UpdateHelpLinkInReadme, MarkDownHelpToHtml, EmbedDotSource, ZipForRelease
+task . Clean, GenerateMarkdownHelp, UpdateHelpLinkInReadme, MarkDownHelpToHtml, EmbedDotSource, ZipForRelease, GitVerifyCommitted
 
-task 
+task GitVerifyCommitted {
+    $test = git diff
+    if ($test) {
+        throw "There are changes uncommitted to Git."
+    }
+}
