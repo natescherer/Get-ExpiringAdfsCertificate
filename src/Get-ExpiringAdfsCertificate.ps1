@@ -94,9 +94,8 @@ param (
     [switch]$NoOutput,
 
     [parameter(ParameterSetName="SaveSmtpCreds",Mandatory=$true)]
-    # Saves SMTP user name, encrypted password, and keyfile to decrypt password to 
-    # Get-ExpiringAdfsCertificate_smtppass.txt, Get-ExpiringAdfsCertificate_smtpkey.txt, 
-    # and Get-ExpiringAdfsCertificate_smtpkey.txt, respectively. These files must exist in the same directory 
+    # Saves SMTP user name, encrypted password, and key to decrypt password to 
+    # Get-ExpiringAdfsCertificate_SmtpCreds.xml. This file must exist in the same directory 
     # as this script when you use the -SmtpAuthenticated parameter.
     [switch]$SaveSmtpCreds
 )
@@ -107,10 +106,13 @@ begin {
         $SSCred = Get-Credential -Message "Enter the username and password for SMTP"
         $SSKey = Get-Random -Count 32 -InputObject (0..255)
         $SSPassUsingKey = ConvertFrom-SecureString -SecureString $SSCred.Password -Key $SSKey
+        $CredObject = @{
+            "Key" = $SSKey;
+            "Username" = $SSCred.UserName;
+            "Password" = $SSPassUsingKey
+        }
 
-        Out-File -InputObject $SSKey -FilePath "Get-ExpiringAdfsCertificate_smtpkey.txt"
-        Out-File -InputObject $SSCred.UserName -FilePath "Get-ExpiringAdfsCertificate_smtpuser.txt"
-        Out-File -InputObject $SSPassUsingKey -FilePath "Get-ExpiringAdfsCertificate_smtppass.txt"
+        Export-Clixml -InputObject $CredObject -Path "Get-ExpiringAdfsCertificate_SmtpCreds.xml"
 
         exit
     }
@@ -147,7 +149,7 @@ process {
         }
     }
 
-    if ($ExpiringCertArray -and ($PSCmdlet.ParameterSetName -eq "SendEmail")) {
+    if ($ExpiringCertArray -and ($PSCmdlet.ParameterSetName -eq "Email")) {
         $BodyData = @()
         foreach ($ExpiringCert in $ExpiringCertArray) {
             $BodyData += ("<strong>" + $ExpiringCert.Name + "</strong>: Cert for '" +
@@ -167,18 +169,14 @@ process {
             UseSsl = $true
         }
         if ($SmtpAuthenticated) {
-            if (!(Test-Path "Get-ExpiringAdfsCertificate_smtpuser.txt") -and
-            !(Test-Path "Get-ExpiringAdfsCertificate_smtppass.txt") -and
-            !(Test-Path "Get-ExpiringAdfsCertificate_smtpkey.txt")) {
+            if (!(Test-Path "Get-ExpiringAdfsCertificate_SmtpCreds.xml")) {
                 throw ("Saved SMTP credentials are missing. Please run script with -SaveSmtpCreds " +
                         "to save SMTP credentials, then run again.")
-
             }
-            $SmtpUser = Get-Content "Get-ExpiringAdfsCertificate_smtpuser.txt"
-            $SmtpKey = Get-Content "Get-ExpiringAdfsCertificate_smtpkey.txt"
-            $SmtpSS = Get-Content "Get-ExpiringAdfsCertificate_smtppass.txt"
-            $SmtpSS = ConvertTo-SecureString -String $SmtpSS -Key $SmtpKey
-            $SMTPCreds = New-Object System.Management.Automation.PSCredential($SmtpUser, $SmtpSS)
+
+            $CredObject = Import-Clixml -Path "Get-ExpiringAdfsCertificate_SmtpCreds.xml"
+            $SmtpSS = ConvertTo-SecureString -String $CredObject.Password -Key $CredObject.Key
+            $SMTPCreds = New-Object System.Management.Automation.PSCredential($CredObject.UserName, $SmtpSS)
             $SmtpParams += @{Credential = $SMTPCreds}
         }
         [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { return $true }
