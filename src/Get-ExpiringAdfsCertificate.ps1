@@ -17,7 +17,7 @@ Outputs an array of objects containing CertType, Name, and ExpiryDate for each e
 Can be overridden by using -NoOutput.
 
 .EXAMPLE
-.\Get-ExpiringAdfsCertificate.ps1
+.\Get-ExpiringAdfsCertificate.ps1 -AdfsServer "adfs01"
 CertType            Name                                        ExpiryDate
 --------            ----                                        ----------
 RP Trust Encryption app.fabrikam.com                            2/14/2018 8:31:43 AM
@@ -26,14 +26,13 @@ ADFS                CN=ADFS Encryption - adfs.treyresearch.net  11/12/2018 2:15:
 ADFS                CN=ADFS Signing - adfs.treyresearch.net     11/12/2018 2:15:13 PM
 
 .EXAMPLE
-.\Get-ExpiringAdfsCertificate.ps1 -EmailFrom adfs@treyresearch.net -EmailTo noc@treyresearch.net -SmtpServer mail.treyresearch.net -SmtpAuthenticated -NoOutput
-(Does not generate an output, but emails details about expiring certificates to noc@treyresearch.net)
+.\Get-ExpiringAdfsCertificate.ps1 -EmailFrom adfs@treyresearch.net -EmailTo noc@treyresearch.net -SmtpServer mail.treyresearch.net -NoOutput
+(Does not generate an output, but emails details about expiring AD FS certificates on the local server to noc@treyresearch.net)
 
 .LINK
 https://github.com/natescherer/Get-ExpiringAdfsCertificate
 
 .NOTES
-As the AD FS cmdlets don't support remoting, this must be run directly on an AD FS server. 
 The account that runs this script will require Administrator rights on the AD FS server. 
 This script was written on PowerShell 5.1 for ADFS 2016, but should theoretically work with older versions. 
 #>
