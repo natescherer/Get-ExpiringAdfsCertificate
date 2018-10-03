@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Ability to run remote from AD FS server
-- Automated building/packaging/doc generating via Invoke-Build
+- Automated building/packaging/documenting/releasing via Invoke-Build
 ### Changed
 - Fixed naming of internal functions to use approved PowerShell verbs
 - Switched to MIT license
