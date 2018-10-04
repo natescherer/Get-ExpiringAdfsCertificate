@@ -5,6 +5,7 @@
 param (
     [parameter(ParameterSetName="Snapshot",Mandatory=$true)]
     [parameter(ParameterSetName="Release",Mandatory=$true)]
+    [parameter(ParameterSetName="Publish",Mandatory=$true)]
     [ValidateSet("Snapshot","Release","Publish")]
     [string]$BuildMode,
 
