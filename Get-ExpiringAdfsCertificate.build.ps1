@@ -14,9 +14,6 @@ param (
 
     [parameter(ParameterSetName="Release",Mandatory=$true)]
     [string]$ReleaseVersion,
-
-    [parameter(ParameterSetName="PublishRelease",Mandatory=$true)]
-    [string]$GitHubRepo
 )
 
 $NameWithExt = ""
@@ -32,9 +29,6 @@ Enter-Build {
             }
         }
         "PublishRelease" {
-            if (!$GitHubRepo) {
-                throw "GitHubRepo must be specified in PublishRelease BuildMode"
-            }
         }
     } 
 
