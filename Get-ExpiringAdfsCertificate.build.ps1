@@ -13,12 +13,24 @@ param (
     [string]$InputPs1,
 
     [parameter(ParameterSetName="Release",Mandatory=$true)]
-    [string]$ReleaseVersion
+    [string]$ReleaseVersion,
+
+    [parameter(ParameterSetName="Publish",Mandatory=$true)]
+    [string]$GitHubApiUser,
+
+    [parameter(ParameterSetName="Publish",Mandatory=$true)]
+    [string]$GitHubApiToken,
+
+    [parameter(ParameterSetName="Publish",Mandatory=$false)]
+    [string]$Proxy   
 )
 
 $NameWithExt = ""
 $NameWithoutExt = ""
-$ReleaseChangelog = ""
+$PublishZipName = ""
+$PublishVersion = ""
+$PublishChangelog = ""
+$PublishRepo = ""
 
 Enter-Build {
     switch ($BuildMode) {
@@ -45,7 +57,7 @@ Enter-Build {
 
 # Synopsis: Perform all build tasks.
 task . Clean, GenerateMarkdownHelp, UpdateHelpLinkInReadme, UpdateChangelog, MarkDownHelpToHtml, EmbedDotSource, Zip, 
-    FinishRelease, GitVerify
+    FinishRelease, GitVerify, GetDataForGitHubRelease, CreateGitHubRelease
 
 # Synopsis: Removes files from build, doc, and out.
 task Clean -If {($BuildMode -eq "Snapshot") -or ($BuildMode -eq "Release")} {
@@ -192,9 +204,6 @@ task UpdateChangelog -If {$BuildMode -eq "Release"} {
     $ChangelogOutput += $ChangelogFooter.TrimEnd("`r`n")
 
     Set-Content -Value $ChangelogOutput -Path "docs\CHANGELOG.md" -NoNewline
-
-    # Store changes for this version for use in other steps
-    $script:ReleaseChangelog = ($ChangelogNewReleaseSection -replace "## \[.*`r`n","").TrimEnd("`r`n")
 }
 
 # Synopsis: Converts README.md and anything matching docs*.md to HTML, and puts in out folder.
@@ -211,7 +220,7 @@ task MarkdownHelpToHtml -If {($BuildMode -eq "Snapshot") -or ($BuildMode -eq "Re
 # Synopsis: Zip up files.
 task Zip -If {($BuildMode -eq "Snapshot") -or ($BuildMode -eq "Release")} {
     if ($ReleaseVersion) {
-        Compress-Archive -Path "out\$NameWithoutExt\*" -DestinationPath "out\$NameWithoutExt-$ReleaseVersion.zip"
+        Compress-Archive -Path "out\$NameWithoutExt\*" -DestinationPath "out\$NameWithoutExt-v$ReleaseVersion.zip"
     } else {
         Compress-Archive -Path "out\$NameWithoutExt\*" -DestinationPath "out\$NameWithoutExt-snapshot$(Get-Date -Format yyMMdd).zip"
     }
@@ -221,7 +230,7 @@ task Zip -If {($BuildMode -eq "Snapshot") -or ($BuildMode -eq "Release")} {
 task FinishRelease -If {$BuildMode -eq "Release"} {
     Write-Build Yellow "Release finished. Please verify files in out/, CHANGELOG.md, and README.md all look correct."
     Write-Build Yellow "Once done, commit and push all changes, then run the following:"
-    Write-Build Gray "Invoke-Build -BuildMode Publish -GitHubRepo https://github.com/namehere/repohere"
+    Write-Build Blue "Invoke-Build -BuildMode Publish -GitHubApiUser `"usernamehere`" -GitHubApiToken `"0123456789abcdef0123456789abcdef01234567`""
 }
 
 # Synopsis: Verify Git changes are committed and pushed.
@@ -234,5 +243,75 @@ task GitVerify -If {$BuildMode -eq "Publish"} {
     $GitUnpushedCommits = git log origin/master..HEAD --oneline
     if ($GitUnpushedCommits) {
         throw "There are commits that have not been pushed to remote yet."
+    }
+}
+
+task GetDataForGitHubRelease  -If {$BuildMode -eq "Publish"} {
+    $Zip = Get-ChildItem out/*.zip
+    if ($Zip.Count -gt 1) {
+        throw "Multiple .zip files detected in out/. Please ensure only the .zip you want to release is in out/."
+    } elseif ($Zip.Count -eq 0) {
+        throw "No .zip files detected in out/. Please make sure you've run Invoke-Build in Release mode."
+    }
+    $script:PublishZipName = $Zip.Name
+    $script:PublishVersion = $Zip.Name.TrimEnd(".zip").Split("-")[-1].TrimStart("v")
+
+    $ChangelogData = Get-Content -Path "CHANGELOG.md" | Out-String
+    $script:PublishChangelog = (($ChangelogData -split "## \[$PublishVersion")[1] -split "`r`n`r`n")[0] -replace "\].*`r`n",""
+
+    $script:PublishRepo = (($ChangelogData -split "https://github.com/")[1] -split "/compare")[0]
+
+    write-host $PublishZipName
+    write-host $PublishVersion
+    write-host $PublishChangelog
+    write-host $PublishRepo
+}
+
+task CreateGitHubRelease -If {$BuildMode -eq "Publish"} {
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+    $AuthHeader = "Basic {0}" -f [System.Convert]::ToBase64String([char[]]"$GitHubApiUser`:$GitHubApiToken")
+    $ReleaseHeaders = @{
+        "Authorization" = $AuthHeader
+    }
+    $ReleaseBody = @{
+        "tag_name" = $PublishVersion;
+        "name" = $PublishVersion;
+        "body" = $PublishChangelog
+    }
+    
+    $ReleaseParams = @{
+        "Headers" = $ReleaseHeaders
+        "Body" = $(ConvertTo-Json -InputObject $ReleaseBody)
+        "Uri" = "https://api.github.com/repos/$PublishRepo/releases"
+        "Method" = "Post"
+    }
+    
+    if ($Proxy) {
+        $ReleaseParams += @{"Proxy" = "http://$Proxy"}
+        $ReleaseParams += @{"ProxyUseDefaultCredentials" = $true}       
+    }
+    
+    $ReleaseResult = Invoke-RestMethod @ReleaseParams
+    
+    if ($ReleaseResult.upload_url) {
+        $UploadHeaders = @{
+            "Authorization" = $AuthHeader
+            "Content-Type" = "application/zip"
+        }
+        $UploadParams = @{
+            "Headers" = $UploadHeaders
+            "Uri" = $ReleaseResult.upload_url.split("{")[0] + "?name=$PublishZipName"
+            "Method" = "Post"
+            "InFile" = "src\$PublishZipName"
+        }
+        $UploadResult = Invoke-RestMethod @UploadParams
+        if ($UploadResult.state -ne "uploaded") {
+            Write-Output $UploadResult
+            throw "There was a problem uploading."
+        }
+    } else {
+        Write-Output $ReleaseResult
+        throw "There was a problem releasing"
     }
 }
