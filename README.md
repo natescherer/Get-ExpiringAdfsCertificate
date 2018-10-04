@@ -41,7 +41,7 @@ ADFS                CN=ADFS Signing - adfs.treyresearch.net     11/12/2018 2:15:
 
 For detailed documentation, [click here on GitHub][HelpMarkdown]<!--,  see Help.html in a release,--> or run Get-Help Get-ExpiringAdfsCertificate.ps1 in PowerShell.
 
-[HelpMarkdown]: ../v1.0.0/doc/Get-ExpiringAdfsCertificate.md
+[HelpMarkdown]: ../v1.1.0/doc/Get-ExpiringAdfsCertificate.md
 
 ## Questions/Comments
 

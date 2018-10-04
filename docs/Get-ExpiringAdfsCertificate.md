@@ -35,7 +35,7 @@ optionally, send an alert email.
 
 ### EXAMPLE 1
 ```
-.\Get-ExpiringAdfsCertificate.ps1
+.\Get-ExpiringAdfsCertificate.ps1 -AdfsServer "adfs01"
 ```
 
 CertType            Name                                        ExpiryDate
@@ -47,10 +47,10 @@ ADFS                CN=ADFS Signing - adfs.treyresearch.net     11/12/2018 2:15:
 
 ### EXAMPLE 2
 ```
-.\Get-ExpiringAdfsCertificate.ps1 -EmailFrom adfs@treyresearch.net -EmailTo noc@treyresearch.net -SmtpServer mail.treyresearch.net -SmtpAuthenticated -NoOutput
+.\Get-ExpiringAdfsCertificate.ps1 -EmailFrom adfs@treyresearch.net -EmailTo noc@treyresearch.net -SmtpServer mail.treyresearch.net -NoOutput
 ```
 
-(Does not generate an output, but emails details about expiring certificates to noc@treyresearch.net)
+(Does not generate an output, but emails details about expiring AD FS certificates on the local server to noc@treyresearch.net)
 
 ## PARAMETERS
 
@@ -238,10 +238,9 @@ Accept wildcard characters: False
 ```
 
 ### -SaveSmtpCreds
-Saves SMTP user name, encrypted password, and keyfile to decrypt password to 
-Get-ExpiringAdfsCertificate_smtppass.txt, Get-ExpiringAdfsCertificate_smtpkey.txt, 
-and Get-ExpiringAdfsCertificate_smtpkey.txt, respectively.
-These files must exist in the same directory 
+Saves SMTP user name, encrypted password, and key to decrypt password to 
+Get-ExpiringAdfsCertificate_SmtpCreds.xml.
+This file must exist in the same directory 
 as this script when you use the -SmtpAuthenticated parameter.
 
 ```yaml
@@ -268,7 +267,6 @@ For more information, see about_CommonParameters (http://go.microsoft.com/fwlink
 ### Outputs an array of objects containing CertType, Name, and ExpiryDate for each expiring certificate. 
 ### Can be overridden by using -NoOutput.
 ## NOTES
-As the AD FS cmdlets don't support remoting, this must be run directly on an AD FS server. 
 The account that runs this script will require Administrator rights on the AD FS server. 
 This script was written on PowerShell 5.1 for ADFS 2016, but should theoretically work with older versions.
 

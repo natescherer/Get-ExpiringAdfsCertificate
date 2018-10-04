@@ -6,20 +6,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+### Changed
+### Deprecated
+### Removed
+### Fixed
+### Security
+
+## [1.1.0] - 2018-10-04
+### Added
 - Ability to run remote from AD FS server
 - Automated building/packaging/documenting/releasing via Invoke-Build
 ### Changed
 - Naming of internal functions updated to match approved PowerShell verbs
 - Switched to MIT license from The Unlicense
 - SMTP credentials now stored in 1 XML file rather than 3 text files
-### Deprecated
-### Removed
-### Fixed
-### Security
 
 ## [1.0.0] - 2018-09-19
 ### Added
 - Initial release
 
-[Unreleased]: https://github.com/natescherer/Get-ExpiringAdfsCertificate/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/natescherer/Get-ExpiringAdfsCertificate/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/natescherer/Get-ExpiringAdfsCertificate/compare/v1.0.0..v1.1.0
 [1.0.0]: https://github.com/natescherer/Get-ExpiringAdfsCertificate/tree/v1.0.0
