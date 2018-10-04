@@ -13,7 +13,7 @@ param (
     [string]$InputPs1,
 
     [parameter(ParameterSetName="Release",Mandatory=$true)]
-    [string]$ReleaseVersion,
+    [string]$ReleaseVersion
 )
 
 $NameWithExt = ""
