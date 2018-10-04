@@ -261,11 +261,6 @@ task GetDataForGitHubRelease  -If {$BuildMode -eq "Publish"} {
     $script:PublishChangelog = (($ChangelogData -split "## \[$PublishVersion")[1] -split "`r`n`r`n")[0] -replace "\].*`r`n",""
 
     $script:PublishRepo = (($ChangelogData -split "https://github.com/")[1] -split "/compare")[0]
-
-    write-host $PublishZipName
-    write-host $PublishVersion
-    write-host $PublishChangelog
-    write-host $PublishRepo
 }
 
 task CreateGitHubRelease -If {$BuildMode -eq "Publish"} {
@@ -304,7 +299,7 @@ task CreateGitHubRelease -If {$BuildMode -eq "Publish"} {
             "Headers" = $UploadHeaders
             "Uri" = $ReleaseResult.upload_url.split("{")[0] + "?name=$PublishZipName"
             "Method" = "Post"
-            "InFile" = "src\$PublishZipName"
+            "InFile" = "out\$PublishZipName"
         }
         $UploadResult = Invoke-RestMethod @UploadParams
         if ($UploadResult.state -ne "uploaded") {
