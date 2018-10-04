@@ -9,9 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ability to run remote from AD FS server
 - Automated building/packaging/documenting/releasing via Invoke-Build
 ### Changed
-- Fixed naming of internal functions to use approved PowerShell verbs
-- Switched to MIT license
-- Storage of SMTP credentials switched from 3 text files to 1 XML file
+- Naming of internal functions updated to match approved PowerShell verbs
+- Switched to MIT license from The Unlicense
+- SMTP credentials now stored in 1 XML file rather than 3 text files
 ### Deprecated
 ### Removed
 ### Fixed
