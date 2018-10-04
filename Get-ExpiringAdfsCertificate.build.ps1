@@ -5,7 +5,7 @@
 param (
     [parameter(ParameterSetName="Snapshot",Mandatory=$true)]
     [parameter(ParameterSetName="Release",Mandatory=$true)]
-    [ValidateSet("Snapshot","Release","PublishRelease")]
+    [ValidateSet("Snapshot","Release","Publish")]
     [string]$BuildMode,
 
     [parameter(ParameterSetName="Snapshot",Mandatory=$false)]
@@ -28,7 +28,7 @@ Enter-Build {
                 throw "ReleaseVersion must be specified in Release BuildMode"
             }
         }
-        "PublishRelease" {
+        "Publish" {
         }
     } 
 
@@ -218,14 +218,14 @@ task Zip -If {($BuildMode -eq "Snapshot") -or ($BuildMode -eq "Release")} {
 }
 
 # Synopsis: Write a note if release build finished properly.
-task FinishRelease {
+task FinishRelease -If {$BuildMode -eq "Release"} {
     Write-Build Yellow "Release finished. Please verify files in out/, CHANGELOG.md, and README.md all look correct."
     Write-Build Yellow "Once done, commit and push all changes, then run the following:"
-    Write-Build Gray "Invoke-Build -BuildMode PublishRelease -GitHubRepo https://github.com/namehere/repohere"
+    Write-Build Gray "Invoke-Build -BuildMode Publish -GitHubRepo https://github.com/namehere/repohere"
 }
 
 # Synopsis: Verify Git changes are committed and pushed.
-task GitVerify -If {$BuildMode -eq "PublishRelease"} {
+task GitVerify -If {$BuildMode -eq "Publish"} {
     $GitUncommitedChanges = git diff
     if ($GitUncommitedChanges) {
         throw "There are changes uncommitted to Git."
