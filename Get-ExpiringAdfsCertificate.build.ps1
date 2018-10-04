@@ -271,8 +271,8 @@ task CreateGitHubRelease -If {$BuildMode -eq "Publish"} {
         "Authorization" = $AuthHeader
     }
     $ReleaseBody = @{
-        "tag_name" = $PublishVersion;
-        "name" = $PublishVersion;
+        "tag_name" = "v$PublishVersion";
+        "name" = "v$PublishVersion";
         "body" = $PublishChangelog
     }
     
@@ -301,6 +301,12 @@ task CreateGitHubRelease -If {$BuildMode -eq "Publish"} {
             "Method" = "Post"
             "InFile" = "out\$PublishZipName"
         }
+
+        if ($Proxy) {
+            $UploadParams += @{"Proxy" = "http://$Proxy"}
+            $UploadParams += @{"ProxyUseDefaultCredentials" = $true}       
+        }
+
         $UploadResult = Invoke-RestMethod @UploadParams
         if ($UploadResult.state -ne "uploaded") {
             Write-Output $UploadResult
