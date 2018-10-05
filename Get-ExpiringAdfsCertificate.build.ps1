@@ -45,7 +45,7 @@ Enter-Build {
         }
     } 
 
-    $InputPs1 = "src\$($BuildRoot.Split("\")[-1]).ps1"
+    $InputPs1 = "src\$( $BuildRoot.Split("\")[-1] ).ps1"
     if (Test-Path $InputPs1) {
         Write-Build Green "Assuming `$InputPs1 value of $InputPs1 based on project folder name."
     } else {
@@ -75,10 +75,10 @@ task EmbedDotSource -If {($BuildMode -eq "Snapshot") -or ($BuildMode -eq "Releas
         if ($Line -like "*.*# Invoke-Build EmbedDotSource") {
             $Indent = $Line.Split(".")[0]
 
-            $DotSourcedPath = $(Split-Path $InputPs1) + $Line.Split("#")[0].Trim().Substring(2)
+            $DotSourcedPath = $( Split-Path $InputPs1 ) + $Line.Split("#")[0].Trim().Substring(2)
             $DotSourcedData = Get-Content -Path $DotSourcedPath
             foreach ($DSLine in $DotSourcedData) {
-                $OutputData += $($Indent + $DSLine)
+                $OutputData += $( $Indent + $DSLine )
             }
         } else {
             $OutputData += $Line
@@ -128,8 +128,8 @@ task UpdateChangelog -If {$BuildMode -eq "Release"} {
     $ChangelogHeader = $ChangelogSections[0]
     $ChangelogSections.Remove($ChangelogHeader)
     if ($ChangelogSections[-1] -like "*[Unreleased]:*") {
-        $ChangelogFooter = "[Unreleased]:" + $($ChangelogSections[-1] -split "\[Unreleased\]:")[1]
-        $ChangelogSections[-1] = $($ChangelogSections[-1] -split "\[Unreleased\]:")[0]
+        $ChangelogFooter = "[Unreleased]:" + $( $ChangelogSections[-1] -split "\[Unreleased\]:" )[1]
+        $ChangelogSections[-1] = $( $ChangelogSections[-1] -split "\[Unreleased\]:" )[0]
     }
 
     # Restore the leading "## [" onto each section that was previously removed by split function
@@ -165,7 +165,7 @@ task UpdateChangelog -If {$BuildMode -eq "Release"} {
     $ChangelogNewReleaseSection = $ChangelogNewReleaseSection -replace "### Security`r`n",""
 
     # Edit $ChangelogNewReleaseSection to add version number and today's date
-    $ChangelogNewReleaseSection = $ChangelogNewReleaseSection -replace ("## \[Unreleased\]","## [$ReleaseVersion] - $((Get-Date -Format 'o').Split('T')[0])")
+    $ChangelogNewReleaseSection = $ChangelogNewReleaseSection -replace ("## \[Unreleased\]","## [$ReleaseVersion] - ( Get-Date -Format 'o' ).Split('T')[0])")
 
     # Inject compare/tree URL(s) into footer
     if ($ChangelogHistorySections -ne "") {
@@ -223,7 +223,7 @@ task Zip -If {($BuildMode -eq "Snapshot") -or ($BuildMode -eq "Release")} {
     if ($ReleaseVersion) {
         Compress-Archive -Path "out\$NameWithoutExt\*" -DestinationPath "out\$NameWithoutExt-v$ReleaseVersion.zip"
     } else {
-        Compress-Archive -Path "out\$NameWithoutExt\*" -DestinationPath "out\$NameWithoutExt-snapshot$(Get-Date -Format yyMMdd).zip"
+        Compress-Archive -Path "out\$NameWithoutExt\*" -DestinationPath "out\$NameWithoutExt-snapshot$( Get-Date -Format yyMMdd ).zip"
     }
 }
 
@@ -278,7 +278,7 @@ task CreateGitHubRelease -If {$BuildMode -eq "Publish"} {
     
     $ReleaseParams = @{
         "Headers" = $ReleaseHeaders
-        "Body" = $(ConvertTo-Json -InputObject $ReleaseBody)
+        "Body" = ConvertTo-Json -InputObject $ReleaseBody
         "Uri" = "https://api.github.com/repos/$PublishRepo/releases"
         "Method" = "Post"
     }

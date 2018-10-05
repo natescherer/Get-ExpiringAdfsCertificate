@@ -118,7 +118,7 @@ begin {
     }
 }
 process {
-    $ComparisonDate = $(Get-Date).AddDays($ExpirationThreshold)
+    $ComparisonDate = $( Get-Date ).AddDays($ExpirationThreshold)
     $ExpiringCertArray = @()
 
     $Trusts = Invoke-Command -ComputerName $AdfsServer -ScriptBlock {Get-AdfsRelyingPartyTrust}
