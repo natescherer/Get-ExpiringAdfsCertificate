@@ -107,8 +107,8 @@ begin {
         $SSKey = Get-Random -Count 32 -InputObject (0..255)
         $SSPassUsingKey = ConvertFrom-SecureString -SecureString $SSCred.Password -Key $SSKey
         $CredObject = @{
-            "Key" = $SSKey;
-            "Username" = $SSCred.UserName;
+            "Key" = $SSKey
+            "Username" = $SSCred.UserName
             "Password" = $SSPassUsingKey
         }
 
@@ -128,14 +128,14 @@ process {
 
     foreach ($Trust in $Trusts) {
         if ($Trust.EncryptionCertificate -and ($Trust.EncryptionCertificate.NotAfter -lt $ComparisonDate)) {
-            $ExpiringCertArray += [PSCustomObject]@{'CertType' = 'RP Trust Encryption';
-                                    'Name' = $Trust.Name;
+            $ExpiringCertArray += [PSCustomObject]@{'CertType' = 'RP Trust Encryption'
+                                    'Name' = $Trust.Name
                                     'ExpiryDate' = $Trust.EncryptionCertificate.NotAfter}
 
         }
         if ($Trust.RequestSigningCertificate -and ($Trust.RequestSigningCertificate.NotAfter -lt $ComparisonDate)) {
-            $ExpiringCertArray += [PSCustomObject]@{'CertType' = 'RP Trust Signing';
-                                    'Name' = $Trust.Name;
+            $ExpiringCertArray += [PSCustomObject]@{'CertType' = 'RP Trust Signing'
+                                    'Name' = $Trust.Name
                                     'ExpiryDate' = $Trust.RequestSigningCertificate.NotAfter}
         }
     }
@@ -143,8 +143,8 @@ process {
     $Certs = Invoke-Command -ComputerName $AdfsServer -ScriptBlock {Get-AdfsCertificate}       
     foreach ($Cert in $Certs) {
         if ($Cert.Certificate.NotAfter -lt $ComparisonDate) {
-            $ExpiringCertArray += [PSCustomObject]@{'CertType' = 'AD FS';
-                                    'Name' = $Cert.Certificate.Subject;
+            $ExpiringCertArray += [PSCustomObject]@{'CertType' = 'AD FS'
+                                    'Name' = $Cert.Certificate.Subject
                                     'ExpiryDate' = $Cert.Certificate.NotAfter}
         }
     }

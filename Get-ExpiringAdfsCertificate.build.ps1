@@ -271,8 +271,8 @@ task CreateGitHubRelease -If {$BuildMode -eq "Publish"} {
         "Authorization" = $AuthHeader
     }
     $ReleaseBody = @{
-        "tag_name" = "v$PublishVersion";
-        "name" = "v$PublishVersion";
+        "tag_name" = "v$PublishVersion"
+        "name" = "v$PublishVersion"
         "body" = $PublishChangelog
     }
     
