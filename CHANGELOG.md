@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 ### Changed
+- HTML documentation is now single files with embedded CSS
 ### Deprecated
 ### Removed
 ### Fixed
