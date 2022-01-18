@@ -75,6 +75,10 @@ param (
     [switch]$SmtpAuthenticated,
 
     [parameter(ParameterSetName="Email",Mandatory=$false)]
+    # Send email using SSL.
+    [switch]$SmtpSSL,
+
+    [parameter(ParameterSetName="Email",Mandatory=$false)]
     # Custom subject for alert email.
     [string]$Subject = "AD FS Certificates on $AdfsServer Expire within $ExpirationThreshold Days",
 
@@ -149,6 +153,8 @@ process {
         }
     }
 
+    $ExpiringCertArray = $ExpiringCertArray | Sort-Object ExpiryDate
+
     if ($ExpiringCertArray -and ($PSCmdlet.ParameterSetName -eq "Email")) {
         $BodyData = @()
         foreach ($ExpiringCert in $ExpiringCertArray) {
@@ -166,8 +172,12 @@ process {
             BodyAsHtml = $true
             SmtpServer = $SmtpServer
             Port = $SmtpPort
-            UseSsl = $true
         }
+        
+        if ($SmtpSSL) {
+            $SmtpParams += @{UseSsl = $true}
+        }
+
         if ($SmtpAuthenticated) {
             if (!(Test-Path "Get-ExpiringAdfsCertificate_SmtpCreds.xml")) {
                 throw ("Saved SMTP credentials are missing. Please run script with -SaveSmtpCreds " +
