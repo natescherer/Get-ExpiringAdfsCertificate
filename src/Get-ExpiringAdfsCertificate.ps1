@@ -76,7 +76,7 @@ param (
 
     [parameter(ParameterSetName="Email",Mandatory=$false)]
     # Send email using SSL.
-    [switch]$SmtpSSL,
+    [switch]$SmtpSSLDisable,
 
     [parameter(ParameterSetName="Email",Mandatory=$false)]
     # Custom subject for alert email.
@@ -164,6 +164,12 @@ process {
 
         $Body = New-HtmlEmailBody -Header $BodyHeader -Data $BodyData -Footer $BodyFooter
 
+        if (!($SmtpSSLDisable)) {
+            $SmtpSSLDisable = $true
+        } else {
+            $SmtpSSLDisable = $false
+        }
+
         $SmtpParams = @{
             From = $EmailFrom
             To = $EmailTo
@@ -172,12 +178,9 @@ process {
             BodyAsHtml = $true
             SmtpServer = $SmtpServer
             Port = $SmtpPort
+            UseSsl = $SmtpSSLDisable
         }
         
-        if ($SmtpSSL) {
-            $SmtpParams += @{UseSsl = $true}
-        }
-
         if ($SmtpAuthenticated) {
             if (!(Test-Path "Get-ExpiringAdfsCertificate_SmtpCreds.xml")) {
                 throw ("Saved SMTP credentials are missing. Please run script with -SaveSmtpCreds " +
