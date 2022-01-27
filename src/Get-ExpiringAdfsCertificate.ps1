@@ -42,7 +42,7 @@ param (
     [parameter(ParameterSetName="Default",Mandatory=$false)]
     [parameter(ParameterSetName="Email",Mandatory=$false)]
     # The AD FS server to query, if is remote.
-    [string]$AdfsServer = $env:computername,
+    [array]$AdfsServer = $env:computername,
 
     [parameter(ParameterSetName="Default",Mandatory=$false)]
     [parameter(ParameterSetName="Email",Mandatory=$false)]
@@ -124,6 +124,19 @@ begin {
 process {
     $ComparisonDate = $( Get-Date ).AddDays($ExpirationThreshold)
     $ExpiringCertArray = @()
+
+    if ($AdfsServer.count -gt '1') {
+        while ($ServerOnline -ne 1) {
+            foreach ($Server in $AdfsServer) {
+                $TestPSRemotePort = Test-NetConnection $Server -Port 5985
+                if ($TestPSRemotePort.tcptestsucceeded -eq $true) {
+                    $AdfsServer = $Server
+                    $ServerOnline ++
+                }
+                break
+            }
+        }
+    }
 
     $Trusts = Invoke-Command -ComputerName $AdfsServer -ScriptBlock {Get-AdfsRelyingPartyTrust}
     if ($IgnoreDisabledTrusts) {
