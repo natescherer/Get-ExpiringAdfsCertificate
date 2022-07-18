@@ -122,7 +122,6 @@ begin {
     }
 }
 process {
-    $ComparisonDate = $( Get-Date ).AddDays($ExpirationThreshold)
     $ExpiringCertArray = @()
 
     if ($AdfsServer.count -gt '1') {
@@ -144,6 +143,7 @@ process {
     }
 
     foreach ($Trust in $Trusts) {
+        $ComparisonDate = $( Get-Date ).AddDays($ExpirationThreshold)
         if ($Trust.EncryptionCertificate -and ($Trust.EncryptionCertificate.NotAfter -lt $ComparisonDate)) {
             $ExpiringCertArray += [PSCustomObject]@{'CertType' = 'RP Trust Encryption'
                                     'Name' = $Trust.Name
@@ -159,6 +159,7 @@ process {
 
     $Certs = Invoke-Command -ComputerName $AdfsServer -ScriptBlock {Get-AdfsCertificate}       
     foreach ($Cert in $Certs) {
+        $ComparisonDate = $( Get-Date ).AddDays($ExpirationThreshold)
         if ($Cert.Certificate.NotAfter -lt $ComparisonDate) {
             $ExpiringCertArray += [PSCustomObject]@{'CertType' = 'AD FS'
                                     'Name' = $Cert.Certificate.Subject
