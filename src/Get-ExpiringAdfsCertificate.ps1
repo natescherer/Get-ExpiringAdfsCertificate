@@ -42,7 +42,7 @@ param (
     [parameter(ParameterSetName="Default",Mandatory=$false)]
     [parameter(ParameterSetName="Email",Mandatory=$false)]
     # The AD FS server to query, if is remote.
-    [string]$AdfsServer = $env:computername,
+    [array]$AdfsServer = $env:computername,
 
     [parameter(ParameterSetName="Default",Mandatory=$false)]
     [parameter(ParameterSetName="Email",Mandatory=$false)]
@@ -73,6 +73,10 @@ param (
     [parameter(ParameterSetName="Email",Mandatory=$false)]
     # Send email using authentication. Note that you must have previously saved credentials using -SaveSmtpCreds.
     [switch]$SmtpAuthenticated,
+
+    [parameter(ParameterSetName="Email",Mandatory=$false)]
+    # Send email using SSL.
+    [switch]$SmtpSSLDisable,
 
     [parameter(ParameterSetName="Email",Mandatory=$false)]
     # Custom subject for alert email.
@@ -118,8 +122,20 @@ begin {
     }
 }
 process {
-    $ComparisonDate = $( Get-Date ).AddDays($ExpirationThreshold)
     $ExpiringCertArray = @()
+
+    if ($AdfsServer.count -gt '1') {
+        while ($ServerOnline -ne 1) {
+            foreach ($Server in $AdfsServer) {
+                $TestPSRemotePort = Test-NetConnection $Server -Port 5985
+                if ($TestPSRemotePort.tcptestsucceeded -eq $true) {
+                    $AdfsServer = $Server
+                    $ServerOnline ++
+                }
+                break
+            }
+        }
+    }
 
     $Trusts = Invoke-Command -ComputerName $AdfsServer -ScriptBlock {Get-AdfsRelyingPartyTrust}
     if ($IgnoreDisabledTrusts) {
@@ -127,6 +143,7 @@ process {
     }
 
     foreach ($Trust in $Trusts) {
+        $ComparisonDate = $( Get-Date ).AddDays($ExpirationThreshold)
         if ($Trust.EncryptionCertificate -and ($Trust.EncryptionCertificate.NotAfter -lt $ComparisonDate)) {
             $ExpiringCertArray += [PSCustomObject]@{'CertType' = 'RP Trust Encryption'
                                     'Name' = $Trust.Name
@@ -142,12 +159,15 @@ process {
 
     $Certs = Invoke-Command -ComputerName $AdfsServer -ScriptBlock {Get-AdfsCertificate}       
     foreach ($Cert in $Certs) {
+        $ComparisonDate = $( Get-Date ).AddDays($ExpirationThreshold)
         if ($Cert.Certificate.NotAfter -lt $ComparisonDate) {
             $ExpiringCertArray += [PSCustomObject]@{'CertType' = 'AD FS'
                                     'Name' = $Cert.Certificate.Subject
                                     'ExpiryDate' = $Cert.Certificate.NotAfter}
         }
     }
+
+    $ExpiringCertArray = $ExpiringCertArray | Sort-Object ExpiryDate
 
     if ($ExpiringCertArray -and ($PSCmdlet.ParameterSetName -eq "Email")) {
         $BodyData = @()
@@ -158,6 +178,12 @@ process {
 
         $Body = New-HtmlEmailBody -Header $BodyHeader -Data $BodyData -Footer $BodyFooter
 
+        if (!($SmtpSSLDisable)) {
+            $SmtpSSLDisable = $true
+        } else {
+            $SmtpSSLDisable = $false
+        }
+
         $SmtpParams = @{
             From = $EmailFrom
             To = $EmailTo
@@ -166,8 +192,9 @@ process {
             BodyAsHtml = $true
             SmtpServer = $SmtpServer
             Port = $SmtpPort
-            UseSsl = $true
+            UseSsl = $SmtpSSLDisable
         }
+        
         if ($SmtpAuthenticated) {
             if (!(Test-Path "Get-ExpiringAdfsCertificate_SmtpCreds.xml")) {
                 throw ("Saved SMTP credentials are missing. Please run script with -SaveSmtpCreds " +
